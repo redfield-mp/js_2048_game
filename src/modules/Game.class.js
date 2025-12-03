@@ -46,9 +46,15 @@ class Game {
       this.init();
     }
 
-    const table = document.querySelector('.game-field');
-
-    this.rows = table.querySelectorAll('tbody tr');
+    this.elements = {
+      gameField: document.querySelectorAll('.game-field tbody tr'),
+      score: document.querySelector('.game-score'),
+      button: document.querySelector('.button'),
+      messages: document.querySelectorAll('.message'),
+      messageStart: document.querySelector('.message-start'),
+      messageWin: document.querySelector('.message-win'),
+      messageLose: document.querySelector('.message-lose'),
+    };
     this.start();
   }
 
@@ -98,37 +104,35 @@ class Game {
    * Starts the game.
    */
   start() {
-    const startButton = document.querySelector('.button.start');
-
     const clickHandler = () => {
-      startButton.innerText = 'Restart';
-      startButton.className = 'button restart';
+      this.elements.button.innerText = 'Restart';
+      this.elements.button.className = 'button restart';
       this.updateField();
       this.restart();
       this.addKeyboardListeners();
-      this.updateMessage();
-      startButton.removeEventListener('click', clickHandler);
+      this.elements.messageStart.classList.add('hidden');
+      this.elements.button.removeEventListener('click', clickHandler);
     };
 
-    startButton.addEventListener('click', clickHandler);
+    this.elements.button.addEventListener('click', clickHandler);
   }
 
   /**
    * Resets the game.
    */
   restart() {
-    const reStartButton = document.querySelector('.button.restart');
     const clickHandler = () => {
-      reStartButton.innerText = 'Start';
-      reStartButton.className = 'button start';
+      this.elements.button.innerText = 'Start';
+      this.elements.button.className = 'button start';
       this.state.forEach((row) => row.fill(0));
       this.updateField();
       this.init();
       this.start();
-      reStartButton.removeEventListener('click', clickHandler);
+      this.elements.messageStart.classList.remove('hidden');
+      this.elements.button.removeEventListener('click', clickHandler);
     };
 
-    reStartButton.addEventListener('click', clickHandler);
+    this.elements.button.addEventListener('click', clickHandler);
   }
 
   // Add your own methods here
@@ -168,19 +172,19 @@ class Game {
   }
 
   updateField() {
-    const scoreElement = document.querySelector('.game-score');
+    const scoreElement = this.elements.score;
 
     scoreElement.innerText = this.score;
 
-    for (let i = 0; i < this.rows.length; i++) {
-      for (let j = 0; j < this.rows.length; j++) {
+    for (let i = 0; i < this.elements.gameField.length; i++) {
+      for (let j = 0; j < this.elements.gameField.length; j++) {
         if (this.state[i][j] === 0) {
-          this.rows[i].cells[j].textContent = '';
-          this.rows[i].cells[j].className = 'field-cell';
+          this.elements.gameField[i].cells[j].textContent = '';
+          this.elements.gameField[i].cells[j].className = 'field-cell';
         } else {
-          this.rows[i].cells[j].textContent = this.state[i][j];
+          this.elements.gameField[i].cells[j].textContent = this.state[i][j];
 
-          this.rows[i].cells[j].className =
+          this.elements.gameField[i].cells[j].className =
             `field-cell field-cell--${this.state[i][j]}`;
         }
       }
@@ -334,16 +338,13 @@ class Game {
   }
 
   updateMessage() {
-    const messages = document.querySelectorAll('.message');
-    const messageForUpdate = document.querySelector(`.message-${this.status}`);
+    if (this.status === this.statuses.WIN) {
+      this.elements.messageWin.classList.remove('hidden');
+    }
 
-    messages.forEach((message) => {
-      message.classList.add('hidden');
-
-      if (messageForUpdate) {
-        messageForUpdate.classList.remove('hidden');
-      }
-    });
+    if (this.status === this.statuses.LOSE) {
+      this.elements.messageLose.classList.remove('hidden');
+    }
   }
 }
 
