@@ -46,6 +46,8 @@ class Game {
       this.init();
     }
 
+    this.keydownHendler = null;
+
     this.elements = {
       gameField: document.querySelectorAll('.game-field tbody tr'),
       score: document.querySelector('.game-score'),
@@ -77,7 +79,9 @@ class Game {
   /**
    * @returns {number}
    */
-  getScore() {}
+  getScore() {
+    return this.score;
+  }
 
   /**
    * @returns {number[][]}
@@ -211,7 +215,9 @@ class Game {
   }
 
   addKeyboardListeners() {
-    document.addEventListener('keydown', (evt) => {
+    this.removeKeyboardListeners();
+
+    this.keydownHandler = (evt) => {
       switch (evt.key) {
         case 'ArrowLeft':
           this.moveLeft();
@@ -228,7 +234,16 @@ class Game {
         default:
           break;
       }
-    });
+    };
+
+    document.addEventListener('keydown', this.keydownHandler);
+  }
+
+  removeKeyboardListeners() {
+    if (this.keydownHandler) {
+      document.removeEventListener('keydown', this.keydownHandler);
+      this.keydownHandler = null;
+    }
   }
 
   makeShift(direction) {
