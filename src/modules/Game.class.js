@@ -28,36 +28,20 @@ class Game {
     [0, 0, 0, 0],
   ];
   score = 0;
-  statuses = {
+  static STATUSES = {
     IDLE: 'idle',
     PLAYING: 'playing',
     WIN: 'win',
     LOSE: 'lose',
   };
-  status = this.statuses.IDLE;
+  status = Game.STATUSES.IDLE;
 
   constructor(initialState) {
     // eslint-disable-next-line no-console
     console.log(initialState);
 
-    if (initialState) {
-      this.state = initialState;
-    } else {
-      this.init();
-    }
-
-    this.keydownHendler = null;
-
-    this.elements = {
-      gameField: document.querySelectorAll('.game-field tbody tr'),
-      score: document.querySelector('.game-score'),
-      button: document.querySelector('.button'),
-      messages: document.querySelectorAll('.message'),
-      messageStart: document.querySelector('.message-start'),
-      messageWin: document.querySelector('.message-win'),
-      messageLose: document.querySelector('.message-lose'),
-    };
-    this.start();
+    this.initialState = initialState;
+    this.keydownHandler = null;
   }
 
   moveLeft() {
@@ -108,44 +92,36 @@ class Game {
    * Starts the game.
    */
   start() {
-    const clickHandler = () => {
-      this.elements.button.innerText = 'Restart';
-      this.elements.button.className = 'button restart';
-      this.updateField();
-      this.restart();
-      this.addKeyboardListeners();
-      this.elements.messageStart.classList.add('hidden');
-      this.elements.button.removeEventListener('click', clickHandler);
-    };
-
-    this.elements.button.addEventListener('click', clickHandler);
+    this.createInitialState();
+    this.status = Game.STATUSES.PLAYING;
   }
 
   /**
    * Resets the game.
    */
   restart() {
-    const clickHandler = () => {
-      this.elements.button.innerText = 'Start';
-      this.elements.button.className = 'button start';
-      this.state.forEach((row) => row.fill(0));
-      this.updateField();
-      this.init();
-      this.start();
-      this.elements.messageStart.classList.remove('hidden');
-      this.elements.button.removeEventListener('click', clickHandler);
-    };
+    this.score = 0;
+    this.status = Game.STATUSES.IDLE;
 
-    this.elements.button.addEventListener('click', clickHandler);
+    this.state = [
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ];
   }
 
   // Add your own methods here
-  init() {
-    let newPosition = this.getNewPosition();
+  createInitialState() {
+    if (this.initialState) {
+      this.state = this.initialState;
+    } else {
+      let newPosition = this.getNewPosition();
 
-    this.state[newPosition[0]][newPosition[1]] = this.getNewNumber();
-    newPosition = this.getNewPosition();
-    this.state[newPosition[0]][newPosition[1]] = this.getNewNumber();
+      this.state[newPosition[0]][newPosition[1]] = this.getNewNumber();
+      newPosition = this.getNewPosition();
+      this.state[newPosition[0]][newPosition[1]] = this.getNewNumber();
+    }
   }
 
   getNewPosition() {
@@ -175,43 +151,8 @@ class Game {
     return freeCells;
   }
 
-  updateField() {
-    const scoreElement = this.elements.score;
-
-    scoreElement.innerText = this.score;
-
-    for (let i = 0; i < this.elements.gameField.length; i++) {
-      for (let j = 0; j < this.elements.gameField.length; j++) {
-        if (this.state[i][j] === 0) {
-          this.elements.gameField[i].cells[j].textContent = '';
-          this.elements.gameField[i].cells[j].className = 'field-cell';
-        } else {
-          this.elements.gameField[i].cells[j].textContent = this.state[i][j];
-
-          this.elements.gameField[i].cells[j].className =
-            `field-cell field-cell--${this.state[i][j]}`;
-        }
-      }
-    }
-
-    if (this.isWin()) {
-      this.status = this.statuses.WIN;
-      this.updateMessage();
-    }
-  }
-
   isWin() {
-    let flag = false;
-
-    this.state.forEach((row) => {
-      row.forEach((cell) => {
-        if (cell === 2048) {
-          flag = true;
-        }
-      });
-    });
-
-    return flag;
+    return this.state.some((row) => row.some((cell) => cell === 2048));
   }
 
   addKeyboardListeners() {
@@ -312,54 +253,45 @@ class Game {
       });
     }
 
-    if (this.getFreeCells().length === 0) {
-      if (!this.isAvailableMoves()) {
-        this.status = this.statuses.LOSE;
-        this.updateMessage();
-      }
-    }
-
     if (JSON.stringify(newState) !== JSON.stringify(this.state)) {
       this.state = newState;
 
       const newPosition = this.getNewPosition();
 
       this.state[newPosition[0]][newPosition[1]] = this.getNewNumber();
-      this.updateField();
+    }
+
+    if (this.getFreeCells().length === 0) {
+      if (!this.isAvailableMoves()) {
+        this.status = Game.STATUSES.LOSE;
+      }
+    }
+
+    if (this.isWin()) {
+      this.status = Game.STATUSES.WIN;
     }
   }
 
   isAvailableMoves() {
-    let field = this.state.map((row) => [...row]);
-    let flag = false;
+    const size = this.state.length;
 
-    for (let i = 0; i < 2; i++) {
-      field.forEach((row) => {
-        row.reduce((acc, el) => {
-          if (acc === el) {
-            flag = true;
-          }
-
-          return el;
-        });
-      });
-
-      field = field[0].map((_, colIndex) => {
-        return field.map((row) => row[colIndex]).reverse();
-      });
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size - 1; j++) {
+        if (this.state[i][j] === this.state[i][j + 1]) {
+          return true;
+        }
+      }
     }
 
-    return flag;
-  }
-
-  updateMessage() {
-    if (this.status === this.statuses.WIN) {
-      this.elements.messageWin.classList.remove('hidden');
+    for (let i = 0; i < size - 1; i++) {
+      for (let j = 0; j < size; j++) {
+        if (this.state[i][j] === this.state[i + 1][j]) {
+          return true;
+        }
+      }
     }
 
-    if (this.status === this.statuses.LOSE) {
-      this.elements.messageLose.classList.remove('hidden');
-    }
+    return false;
   }
 }
 
